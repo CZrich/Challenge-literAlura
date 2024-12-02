@@ -8,6 +8,7 @@ import com.literatura.dto.AuthorDto;
 import jakarta.persistence.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 //@JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
@@ -20,8 +21,8 @@ public class Author {
     private  String name;
     private Integer birthYear;
     private Integer deathYear;
-    @JsonIgnore
-    @OneToMany(mappedBy = "author",fetch = FetchType.LAZY)
+
+    @OneToMany(mappedBy = "author",fetch = FetchType.EAGER)
     private List<Book> books;
 
 
@@ -82,6 +83,9 @@ public class Author {
         return "---- Author ----\n"+
                 "name:"+name + '\n' +
                 "birth_year:"+birthYear +'\n'+
-                "death_year:"+deathYear+'\n' ;
+                "death_year:"+deathYear+'\n' +
+                "Libros:"+this.getBooks().stream()
+                .map(Book::getTitle)
+                .toList()+'\n';
     }
 }

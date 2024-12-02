@@ -15,7 +15,7 @@ public class Book {
     private  Long id;
     @Column(unique = true)
     private String title;
-    @JsonIgnore
+
     @ManyToOne
     private Author author;
     private String language;
@@ -86,6 +86,7 @@ public class Book {
     public String toString() {
         return  "---- Book ----\n"+
                 "title:"+title + '\n' +
+                "author:"+author.getName()+'\n'+
                 "languages:"+language +'\n'+
                 "downloads:"+downloads +'\n';
 
