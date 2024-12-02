@@ -12,10 +12,8 @@ import com.literatura.service.ConsumerApi;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLOutput;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class DriverLiteratura {
     private final String BASE_URL="https://gutendex.com/books/";
@@ -53,9 +51,11 @@ public class DriverLiteratura {
             reader.nextLine();
             if(option >0 && option <8){
                 break;
+            }else{
+                System.out.println("ingrese un numero del 1 al 7");
             }
             }catch (InputMismatchException e){
-                System.out.println("Por favor ingrese un numero del 1 al 6");
+                System.out.println("Por favor ingrese solo numeros");
                 reader.nextLine();
             }
 
@@ -78,7 +78,6 @@ public class DriverLiteratura {
                             System.out.println("""
                                 en -> English
                                 fr -> French
-                                in -> Hindi
                                 es -> Español
                                 """);
                             System.out.println("Ingrese idioma:");
@@ -153,9 +152,18 @@ public class DriverLiteratura {
 
     void searchByLanguages(String languages){
         Optional<List<Book>> booksOpt=bookService.getBooksInLanguage(languages);
+
+
         if(booksOpt.isPresent()){
-            System.out.println("SE ENCONTRARON: "+booksOpt.get().size() + " libros");
-            booksOpt.get().forEach(System.out::println);
+            DoubleSummaryStatistics bookStatistic=booksOpt.get().stream()
+                            .collect(Collectors.summarizingDouble(Book::getDownloads));
+            System.out.println("__________________________________________________________________");
+            System.out.println("Total de libros en el idioma \'"+languages +"\' es: " + bookStatistic.getCount());
+            System.out.println("El libro con  minimo de descargas tiene: " + bookStatistic.getMin());
+            System.out.println("El libro con maximo de descargas tiene: " + bookStatistic.getMax());
+            System.out.println("El total de descargas en este idioma es: " + bookStatistic.getSum());
+            System.out.println("El promedio de descargas es: " + bookStatistic.getAverage());
+            System.out.println("__________________________________________________________________");
         }else{
             System.out.println("No se encontraron libros con ese idioma");
         }
