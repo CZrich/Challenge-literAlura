@@ -1,12 +1,10 @@
 package com.literatura.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
-public class Adapter  implements IAdapter{
+public class Adapter implements IAdapter{
     private ObjectMapper objectMapper = new ObjectMapper();
     @Override
     public <T> T getDataFromJson(String json, Class<T> clase) {

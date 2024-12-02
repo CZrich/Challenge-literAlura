@@ -1,16 +1,190 @@
 package com.literatura.console;
 
+import com.literatura.dto.ApiResponse;
+import com.literatura.dto.BookDto;
+import com.literatura.models.Author;
+import com.literatura.models.Book;
 import com.literatura.service.Adapter;
+import com.literatura.service.AuthorSerivece;
+import com.literatura.service.BookService;
 import com.literatura.service.ConsumerApi;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLOutput;
+import java.util.InputMismatchException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
 
 public class DriverLiteratura {
     private final String BASE_URL="https://gutendex.com/books/";
-    private Adapter adapter = new Adapter();
+    private Adapter my_adapter= new Adapter();
     private ConsumerApi consumerApi= new ConsumerApi();
+    private Scanner reader = new Scanner(System.in);
+    private AuthorSerivece  authorService;
+    private BookService bookService;
+
+    public DriverLiteratura(BookService bookService,AuthorSerivece authorSerivece){
+        this.bookService=bookService;
+        this.authorService=authorSerivece;
+    }
 
     public  void test(){
-     String ans=consumerApi.getDataApi(BASE_URL);
-        System.out.println("la data" + ans);
+        int option=0;
+        String languages;
+        while(true){
+          while(true){
+              try{
+              System.out.println("\t>>> Book Api <<<\n");
+              var menu="""
+                    1 .- Buscar un Libro Nuevo
+                    2.-  Mostrar lo libros buscados
+                    3.-  Buscar en idiomas
+                    4.-  Buscar autores vivos en el año
+                    5.-  Mostrar todos los autores
+                    6.-  Mostrar top 5 libros mas descargados
+                    7.-  Salir
+                    """;
+              System.out.println(menu);
+              System.out.print("Ingrese su elecion:");
+
+            option= reader.nextInt();
+            reader.nextLine();
+            if(option >0 && option <8){
+                break;
+            }
+            }catch (InputMismatchException e){
+                System.out.println("Por favor ingrese un numero del 1 al 6");
+                reader.nextLine();
+            }
+
+          }
+
+
+
+            switch (option){
+                case 1:
+
+                     searchBook();
+
+                    break;
+                case 2:
+                    showAllBooks();
+                    break;
+                case 3:
+                    while (true) {
+                        try {
+                            System.out.println("""
+                                en -> English
+                                fr -> French
+                                in -> Hindi
+                                es -> Español
+                                """);
+                            System.out.println("Ingrese idioma:");
+                            languages = reader.nextLine();
+                            if (languages.matches("[a-zA-Z]{2}")) { // Validar que sean 2 letras
+                                searchByLanguages(languages);
+                                break;
+                            } else {
+                                throw new IllegalArgumentException("Debe ingresar un código de idioma válido (ej: 'en', 'es').");
+                            }
+                        } catch (IllegalArgumentException e) {
+                            System.out.println(e.getMessage());
+                        }
+                    }
+                    break;
+
+                case 4:
+                    searchAuthorInYear();
+                    break;
+                case 5:
+                    showAllAuthors();
+                    break;
+                case 6:
+                    showTop5Books();
+                    break;
+                case 7:
+                    System.out.println("saliendo...");
+                    return;
+                default:
+                    System.out.println("No existe esa opcion");
+            }
+
+
+        }
+    }
+
+    public void searchBook(){
+        System.out.println("Ingrese titulo:");
+        var title= reader.nextLine();
+        if(!bookService.isExist(title)){
+            String url=BASE_URL +"?search="+URLEncoder.encode(title,StandardCharsets.UTF_8);
+            var json= consumerApi.getDataApi(url);
+
+            ApiResponse response=my_adapter.getDataFromJson(json,ApiResponse.class);
+            List<BookDto> bookDto = response.result();
+            Optional<Book> book = Optional.ofNullable(bookDto)
+                    .flatMap(list -> list.stream().findFirst())
+                    .map(Book::new);
+            if(book.isPresent()){
+                bookService.saveBook(book.get());
+                System.out.println("libro guardado.");
+            }else{
+                System.out.println("hubo un error al guardar el libro");
+            }
+
+        }else{
+            System.out.println("El libro ya existe");
+        }
+
+
+
+    }
+    public  void  showTop5Books(){
+        List<Book> books= bookService.topFiveBooks();
+        System.out.println("El top 5 de libros mas descargados es:");
+         books.forEach(System.out::println);
+    }
+    void showAllBooks(){
+        List<Book> books=bookService.getAll();
+        books.forEach(System.out::println);
+    }
+
+    void searchByLanguages(String languages){
+        Optional<List<Book>> booksOpt=bookService.getBooksInLanguage(languages);
+        if(booksOpt.isPresent()){
+            System.out.println("SE ENCONTRARON: "+booksOpt.get().size() + " libros");
+            booksOpt.get().forEach(System.out::println);
+        }else{
+            System.out.println("No se encontraron libros con ese idioma");
+        }
+
+    }
+    void searchAuthorInYear(){
+        int year;
+        while (true) {
+            try {
+                System.out.println("Ingrese año:");
+                year = Integer.parseInt(reader.nextLine());
+
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("Debe ingresar un año válido.");
+            }
+        }
+
+        List<Author> authors= authorService.getAuthorsLiveIn(year);
+         if(!authors.isEmpty()){
+             authors.forEach(System.out::println);
+         }else {
+             System.out.println("No hay autores vivos en ese año.");
+         }
+    }
+    void showAllAuthors(){
+        List<Author> authors=authorService.getAllAuthors();
+        authors.forEach(System.out::println);
+
     }
 
 }
